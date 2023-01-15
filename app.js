@@ -9,7 +9,7 @@ const HttpError = require("./models/http-error");
 
 const app = express();
 
-const url = "copy url from mongodb atlas";
+const url = "";
 
 //parsing the body. this should be done before the requests reaches the route
 app.use(bodyParser.json());

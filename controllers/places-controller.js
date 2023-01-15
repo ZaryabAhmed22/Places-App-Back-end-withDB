@@ -4,6 +4,7 @@ const { validationResult } = require("express-validator");
 //Own imports
 const HttpError = require("../models/http-error");
 const getCoordsForAddress = require("../util/location");
+const PlaceModel = require("../models/place");
 
 //Setting up dummy data
 let DUMMY_PLACES = [
@@ -117,18 +118,25 @@ const createPlace = async (req, res, next) => {
     return next(err);
   }
 
-  //Creating a place
-  const createdPlace = {
-    id: uuid.v4(),
+  //Creating a place using the place model accroding to the Schema
+  const createdPlace = new PlaceModel({
     title,
     description,
-    location: coords,
     address,
+    location: coords,
+    image: "https://unsplash.com/photos/l8vKWxhVuts",
     creator,
-  };
+  });
 
-  //adding the place to the data
-  DUMMY_PLACES.push(createdPlace);
+  //adding the place to the database
+  //DUMMY_PLACES.push(createdPlace);
+  try {
+    await createdPlace.save();
+  } catch (err) {
+    const error = new HttpError("Creating place failed", 500);
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
+  }
 
   //returning a response
   res.status(201).json({ place: createdPlace });
