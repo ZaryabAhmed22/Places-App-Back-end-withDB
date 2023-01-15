@@ -169,7 +169,7 @@ const createPlace = async (req, res, next) => {
 
 ////////////////////////// PATCH REQUEST //////////////////////////////
 //>> Middleware function for patch request at "/api/places/:pid"
-const updatePlace = (req, res, next) => {
+const updatePlace = async (req, res, next) => {
   //This will check if any error returned by the validators used in the reuqest in post-routes file
   const errors = validationResult(req);
 
@@ -181,51 +181,80 @@ const updatePlace = (req, res, next) => {
   //getting the place ID from the request
   const placeId = req.params.pid;
 
-  //Finding  the place according to placeId and creating its copy, because we are avoiding to manuplulate the data directly so we create a copy and then we will update and replace it in the data
-  const placeToBeUpdated = {
-    ...DUMMY_PLACES.find((place) => {
-      return place.id === placeId;
-    }),
-  };
-
-  //Getting the index of the plcesToBeUpdated so that we can replace the updated place with it
-  const placeTBUIndex = DUMMY_PLACES.findIndex((place) => {
-    return place.id === placeId;
-  });
-
   //Getting the user entered data
   const { title, description } = req.body;
 
-  //Updating the place object based on user entered data
+  let placeToBeUpdated;
+
+  //Finding  the place according to placeId, using the findById method and we can use the exec() method to make it a real promise
+  try {
+    placeToBeUpdated = await PlaceModel.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not find a place for this id.",
+      500
+    );
+
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
+  }
+
+  //Updating the values
   placeToBeUpdated.title = title;
   placeToBeUpdated.description = description;
 
-  //Replcaing the place
-  DUMMY_PLACES[placeTBUIndex] = placeToBeUpdated;
+  //Saving the updated place, since it's an async task we will use the try catch block
+  try {
+    await placeToBeUpdated.save();
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not update the palce",
+      500
+    );
 
-  //returning a response
-  res.status(200).json({ place: placeToBeUpdated });
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
+  }
+
+  //Converting the mongoose object to simple JS object and removing the underscore "_" from the auto genertated id, using getters: true
+  res
+    .status(200)
+    .json({ updatedPlace: placeToBeUpdated.toObject({ getters: true }) });
 };
 
 //////////////////////////// DELETE REQUEST //////////////////////////
 //>> Middleware function for patch request at "/api/places/:pid"
-const deletePlace = (req, res, next) => {
+const deletePlace = async (req, res, next) => {
   //getting the place ID from the request
   const placeId = req.params.pid;
 
-  //Checking whether the place exists ors not
-  placeToBeDeleted = DUMMY_PLACES.find((place) => {
-    place.id === placeId;
-  });
+  let placeToBeDeleted;
 
-  if (!placeToBeDeleted) {
-    throw new HttpError("Could not find a place for this id", 404);
+  //Finding  the place according to placeId that is to be deleted, using the findById method and we can use the exec() method to make it a real promise
+  try {
+    placeToBeDeleted = await PlaceModel.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not find a place for this id.",
+      500
+    );
+
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
   }
 
-  //Filtering the data based on the place id >> overwriting the places data with the filtered places
-  DUMMY_PLACES = DUMMY_PLACES.filter((place) => {
-    return place.id !== placeId;
-  });
+  //Deleting the place
+  try {
+    placeToBeDeleted.remove();
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not delete a place",
+      500
+    );
+
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
+  }
 
   //returning a response
   res.status(200).json({ message: "Deleted place" });
