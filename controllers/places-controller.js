@@ -37,14 +37,27 @@ let DUMMY_PLACES = [
   },
 ];
 
-const getPlaceById = (req, res, next) => {
+////////////////////////////// GET REQUESTS //////////////////////////////
+// >> Middleware functin to get a single place by placeId
+const getPlaceById = async (req, res, next) => {
   //  console.log("GET Request in PLaces");
   const placeId = req.params.pid;
 
-  //Finding  the place according to placeId
-  const place = DUMMY_PLACES.find((place) => {
-    return place.id === placeId;
-  });
+  //Initialising the place variable to store the found place and send it as a response
+  let place;
+
+  //Finding  the place according to placeId, using the findById method and we can use the exec() method to make it a real promise
+  try {
+    place = await PlaceModel.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not find a place for this id.",
+      500
+    );
+
+    //If we didn't add the next(error), the code execution won't stop despite throwing an error
+    return next(error);
+  }
 
   //   //Error handling as a guard clause
   //   if (!place) {
@@ -61,20 +74,26 @@ const getPlaceById = (req, res, next) => {
     );
 
     //This will triger the error handling middleware in the app.js
-    throw error;
+    //throw error; //replcaing throw with next since it's an async function now
+    return next(error);
   }
 
-  res.json({ place });
+  //Converting the mongoose object to simple JS object and removing the underscore "_" from the auto genertated id, using getters: true
+  res.json({ place: place.toObject({ getters: true }) });
 };
 
-const getPlacesByUserId = (req, res, next) => {
+// >> Middleware function to get all the places created by a single user
+const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid;
-  console.log(userId);
 
-  //Finding the user's places from the data
-  const places = DUMMY_PLACES.filter((place) => {
-    return place.creator === userId;
-  });
+  let places;
+  //Finding the user's places from the database using the userId
+  try {
+    places = await PlaceModel.find({ creator: userId });
+  } catch (err) {
+    const error = new HttpError("Something went wrong", 500);
+    return next(error);
+  }
 
   //   //Error handling as a guard clause
   //   if (!places) {
@@ -94,9 +113,15 @@ const getPlacesByUserId = (req, res, next) => {
     return next(error);
   }
 
-  res.json({ places });
+  //First, iterating/maping through the array returned by find() and then converting the mongoose object to simple JS object and removing the underscore "_" from the auto genertated id, using getters: true
+  res.json({
+    places: places.map((place) => {
+      return place.toObject({ getters: true });
+    }),
+  });
 };
 
+///////////////////////// POST REQUEST //////////////////////////////
 //Middleware function for post request at "/api/places"
 const createPlace = async (req, res, next) => {
   //This will check if any error returned by the validators used in the reuqest in post-routes file
@@ -142,6 +167,7 @@ const createPlace = async (req, res, next) => {
   res.status(201).json({ place: createdPlace });
 };
 
+////////////////////////// PATCH REQUEST //////////////////////////////
 //>> Middleware function for patch request at "/api/places/:pid"
 const updatePlace = (req, res, next) => {
   //This will check if any error returned by the validators used in the reuqest in post-routes file
@@ -181,6 +207,7 @@ const updatePlace = (req, res, next) => {
   res.status(200).json({ place: placeToBeUpdated });
 };
 
+//////////////////////////// DELETE REQUEST //////////////////////////
 //>> Middleware function for patch request at "/api/places/:pid"
 const deletePlace = (req, res, next) => {
   //getting the place ID from the request
@@ -204,6 +231,7 @@ const deletePlace = (req, res, next) => {
   res.status(200).json({ message: "Deleted place" });
 };
 
+////////////////////////// EXPORTS /////////////////////////////////////
 //Exporting are functions >> this is the syntax used to export multiple functions
 exports.getPlaceById = getPlaceById;
 exports.getPlacesByUserId = getPlacesByUserId;
