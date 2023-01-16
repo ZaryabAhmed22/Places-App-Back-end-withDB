@@ -2,15 +2,15 @@ const mongoose = require("mongoose");
 
 //Creating the Schema for places
 const placeSchema = new mongoose.Schema({
-  title: { type: String, requireed: true },
-  description: { type: String, requireed: true },
-  image: { type: String, requireed: true },
-  address: { type: String, requireed: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  image: { type: String, required: true },
+  address: { type: String, required: true },
   location: {
-    lat: { type: Number, requireed: true },
-    lng: { type: Number, requireed: true },
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true },
   },
-  creator: { type: String, requireed: true },
+  creator: { type: mongoose.Types.ObjectId, required: true, ref: "User" },
 });
 
 //Creating the model and exporting it >> Place will be converted to "places" as the name of the collection

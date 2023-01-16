@@ -61,7 +61,7 @@ const createUser = async (req, res, next) => {
   }
 
   //This is the data sent by signup form
-  const { name, email, password, places } = req.body;
+  const { name, email, password } = req.body;
 
   //Checking if the user already exists with the same provided email
   let existingUser;
@@ -90,7 +90,7 @@ const createUser = async (req, res, next) => {
     email,
     password,
     image: "https://unsplash.com/photos/iEEBWgY_6lA",
-    places,
+    places: [],
   });
 
   //Adding the created user to the database

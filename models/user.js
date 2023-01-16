@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true }, //unique fastens the quering for the property by creating an index for that property
   password: { type: String, required: true, minlength: 6 },
   image: { type: String, required: true },
-  places: { type: String, required: true },
+  places: [{ type: mongoose.Types.ObjectId, required: true, ref: "Place" }],
 });
 
 //Using the mongoose-unique-validator to make sure that a user is only created if the email doesn't exist in the database
