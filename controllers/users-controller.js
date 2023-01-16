@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 
 //Own imports
 const HttpError = require("../models/http-error");
+const UserModel = require("../models/user");
 
 //Setting up dummy data
 const DUMMY_USERS = [
