@@ -7,6 +7,7 @@ const getCoordsForAddress = require("../util/location");
 const PlaceModel = require("../models/place");
 const UserModel = require("../models/user");
 const mongoose = require("mongoose");
+const place = require("../models/place");
 
 //Setting up dummy data
 let DUMMY_PLACES = [
@@ -275,8 +276,9 @@ const deletePlace = async (req, res, next) => {
   let placeToBeDeleted;
 
   //Finding  the place according to placeId that is to be deleted, using the findById method and we can use the exec() method to make it a real promise
+  //We also want access to the user that created this places and delete the place id from the places array from that user, for this purpose we use populate(). To use populate method, make sure to create a relation between those two collections
   try {
-    placeToBeDeleted = await PlaceModel.findById(placeId);
+    placeToBeDeleted = await PlaceModel.findById(placeId).populate("creator");
   } catch (err) {
     const error = new HttpError(
       "Something went wrong, could not find a place for this id.",
@@ -287,10 +289,33 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
+  if (!placeToBeDeleted) {
+    const error = new HttpError("Could not find place for this id", 404);
+    return next(error);
+  }
+
   //Deleting the place
   try {
-    placeToBeDeleted.remove();
+    //placeToBeDeleted.remove();
+    //Starting a session
+    const session = await mongoose.startSession();
+
+    //Starting a transation
+    session.startTransaction();
+
+    //Removing the place
+    await placeToBeDeleted.remove({ session: session });
+
+    //Making sure the place ID is deleted from the places array in the user
+    placeToBeDeleted.creator.places.pull(placeToBeDeleted); //this is not a regular JS pull method >> We don't need to tell to remove that ID, it will be done automatically
+
+    //Saving the changes
+    await placeToBeDeleted.creator.save({ session: session });
+
+    //Making sure that nothing went wrong. All the changes are saed once the transaction is commited and nothig went wrong, othwerwise everything would return back
+    await session.commitTransaction();
   } catch (err) {
+    // console.log(err);
     const error = new HttpError(
       "Something went wrong, could not delete a place",
       500
