@@ -5,6 +5,8 @@ const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const getCoordsForAddress = require("../util/location");
 const PlaceModel = require("../models/place");
+const UserModel = require("../models/user");
+const mongoose = require("mongoose");
 
 //Setting up dummy data
 let DUMMY_PLACES = [
@@ -153,14 +155,52 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  //Checking the user ID exists or not
+  let user;
+
+  try {
+    //Finding user by the creator id which right now we provide with the request but this logic will be changed with auth
+    user = await UserModel.findById(creator);
+  } catch (err) {
+    const error = new HttpError(
+      "Creating place failed, please try again later",
+      500
+    );
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError("Could not find user for provided id", 404);
+    return next(error);
+  }
+
   //adding the place to the database
   //DUMMY_PLACES.push(createdPlace);
   try {
-    await createdPlace.save();
+    //await createdPlace.save(); >> This is no more useful when we have to create a connection/relation between user and place
+    //Transactions and sessions >> Transactions perform multiple tasks at the same time and transactions run in sessions
+
+    //Starting a session
+    const session = await mongoose.startSession();
+
+    //Starting a transation
+    session.startTransaction();
+
+    //Saving the createdPLace
+    await createdPlace.save({ session: session });
+
+    //Making sure the place ID is added to the user
+    user.places.push(createdPlace); //this is not a regular JS push method
+
+    //Saving the user using the same session
+    await user.save({ session: session });
+
+    //Making sure that nothing went wrong. All the changes are saed once the transaction is commited and nothig went wrong, othwerwise everything would return back
+    await session.commitTransaction();
   } catch (err) {
     const error = new HttpError("Creating place failed", 500);
     //If we didn't add the next(error), the code execution won't stop despite throwing an error
-    return next(error);
+    return next(err);
   }
 
   //returning a response

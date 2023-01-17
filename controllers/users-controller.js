@@ -94,7 +94,6 @@ const createUser = async (req, res, next) => {
   });
 
   //Adding the created user to the database
-
   try {
     await createdUser.save();
   } catch (err) {
