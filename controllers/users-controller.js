@@ -5,22 +5,6 @@ const { validationResult } = require("express-validator");
 const HttpError = require("../models/http-error");
 const UserModel = require("../models/user");
 
-//Setting up dummy data
-const DUMMY_USERS = [
-  {
-    id: "u1",
-    name: "Zaryab",
-    email: "test@test.com",
-    password: "testsss",
-  },
-  {
-    id: "u2",
-    name: "Jonas",
-    email: "jonas@test.com",
-    password: "jonastest",
-  },
-];
-
 ////////////////////////// GET REQUESTS /////////////////////////////
 // >> Creating this middleware function for /api/users/:uid
 const getUserById = async (req, res, next) => {

@@ -1,4 +1,3 @@
-const uuid = require("uuid");
 const { validationResult } = require("express-validator");
 
 //Own imports
@@ -8,37 +7,6 @@ const PlaceModel = require("../models/place");
 const UserModel = require("../models/user");
 const mongoose = require("mongoose");
 const place = require("../models/place");
-
-//Setting up dummy data
-let DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world",
-    //   imageURL:
-    //     "https://images.unsplash.com/photo-1428366890462-dd4baecf492b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8ZW1waXJlJTIwc3RhdGUlMjBidWlsZGluZ3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=400&q=60",
-    address: "20 W 34th St, New York, NY 10001",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creator: "u1",
-  },
-
-  {
-    id: "p2",
-    title: "Empire State Building",
-    description: "One of the most famous sky scrapers in the world",
-    //   imageURL:
-    //     "https://images.unsplash.com/photo-1528291151377-165f5107c82a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8ZW1waXJlJTIwc3RhdGUlMjBidWlsZGluZ3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=400&q=60",
-    address: "20 W 34th St, New York, NY 10001",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    creator: "u2",
-  },
-];
 
 ////////////////////////////// GET REQUESTS //////////////////////////////
 // >> Middleware functin to get a single place by placeId
@@ -90,9 +58,13 @@ const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid;
 
   let places;
+  //let userWithPlaces; //alternative approach
+
   //Finding the user's places from the database using the userId
   try {
     places = await PlaceModel.find({ creator: userId });
+    // userWithPlaces = await UserModel.findById(userId).populate("places");
+    // console.log(userWithPlaces.places); returns the places documents related to this user document
   } catch (err) {
     const error = new HttpError("Something went wrong", 500);
     return next(error);
